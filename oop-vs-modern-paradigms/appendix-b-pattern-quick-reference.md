@@ -42,6 +42,23 @@
 | 30 | Aggregate Root Pattern | 외부에서는 Root만 참조, 내부 Entity 보호 | 01 |
 | 31 | Repository Pattern (DDD) | Aggregate 단위 저장/조회 추상화 (DAO와 구분) | 01 |
 | 32 | Domain Service Pattern | 여러 Aggregate 협력이 필요한 상태 없는 순수 함수 | 01 |
+| 33 | First-Class Function | 함수를 변수에 할당, 인자로 전달, 반환값으로 사용 | 09 |
+| 34 | Higher-Order Function | 함수를 인자로 받거나 반환하는 함수 (map, flatMap, filter) | 09 |
+| 35 | Function Composition | andThen/compose로 함수들을 순차적으로 연결 | 09 |
+| 36 | Functor | map 연산으로 컨테이너 내부 값을 변환하는 패턴 | 10 |
+| 37 | Monad | flatMap으로 중첩된 컨테이너를 평탄화하는 패턴 | 10 |
+| 38 | Applicative | 여러 컨테이너의 값을 독립적으로 결합하는 패턴 | 10 |
+| 39 | Lens Pattern | 불변 객체의 중첩 필드를 함수형으로 업데이트 | 11 |
+| 40 | Anti-Corruption Layer | 외부 모델이 도메인을 오염시키는 것을 방지하는 변환 계층 | 01 |
+| 41 | Typestate Pattern | 각 상태가 별도 타입, 상태 전이가 함수 시그니처로 강제 | 05 |
+| 42 | Memoization | 순수 함수 결과를 캐싱하여 성능 최적화 | 11 |
+| 43 | Lazy Evaluation | Supplier로 계산을 지연하여 불필요한 연산 회피 | 11 |
+| 44 | Currying | 다인자 함수를 단인자 함수 체인으로 변환 | 09 |
+| 45 | Fold / Reduce | 컬렉션을 단일 값으로 축약하는 재귀적 패턴 | 12, 15 |
+| 46 | Parse Don't Validate | 검증 결과를 새로운 타입으로 캡처 (isValid -> parse) | 03 |
+| 47 | Make Illegal States Unrepresentable | 불가능한 상태를 타입으로 표현 불가능하게 설계 | 05 |
+| 48 | Onion Architecture | Core를 여러 계층으로 감싼 DMMF 권장 구조 | 08 |
+| 49 | Ubiquitous Language | 도메인 전문가와 개발자가 사용하는 공통 용어 체계 | 02 |
 
 ---
 
@@ -412,6 +429,261 @@
 7| }
 ```
 
+### 33. First-Class Function
+
+**[코드 B.33]** First-Class Function
+```java
+1| // package: com.example.pattern
+2| // 함수를 변수에 할당
+3| Function<Order, Money> totalFn = Order::calculateTotal;
+4| // 함수를 인자로 전달
+5| Money result = applyToOrder(order, totalFn);
+6| // 함수를 반환값으로 사용
+7| Function<Order, Boolean> filter = createFilter("VIP");
+```
+
+### 34. Higher-Order Function
+
+**[코드 B.34]** Higher-Order Function
+```java
+1| // package: com.example.pattern
+2| // 함수를 인자로 받음
+3| public static <T, R> List<R> map(List<T> list, Function<T, R> fn) {
+4|   return list.stream().map(fn).toList();
+5| }
+6| // 함수를 반환
+7| public static Predicate<Order> minAmount(Money threshold) {
+8|   return order -> order.total().isGreaterThan(threshold);
+9| }
+```
+
+### 35. Function Composition
+
+**[코드 B.35]** Function Composition
+```java
+1| // package: com.example.pattern
+2| Function<String, String> trim = String::trim;
+3| Function<String, String> lower = String::toLowerCase;
+4| Function<String, String> normalize = trim.andThen(lower);
+5|
+6| String result = normalize.apply("  HELLO  ");  // "hello"
+```
+
+### 36. Functor
+
+**[코드 B.36]** Functor
+```java
+1| // package: com.ecommerce.shared
+2| // Optional은 Functor - map으로 내부 값 변환
+3| Optional<Order> order = findOrder(id);
+4| Optional<Money> total = order.map(Order::calculateTotal);
+5|
+6| // Result도 Functor
+7| Result<Order, Error> result = validate(cmd).map(Order::new);
+```
+
+### 37. Monad
+
+**[코드 B.37]** Monad
+```java
+1| // package: com.ecommerce.shared
+2| // flatMap으로 중첩 컨테이너 평탄화
+3| Optional<Order> order = findOrder(id);
+4| Optional<Payment> payment = order.flatMap(o -> findPayment(o.paymentId()));
+5| // flatMap 없이: Optional<Optional<Payment>> - 중첩됨
+6|
+7| // Result 체이닝
+8| Result<Order, Error> result = validate(cmd)
+9|   .flatMap(v -> createOrder(v))
+10|   .flatMap(o -> processPayment(o));
+```
+
+### 38. Applicative
+
+**[코드 B.38]** Applicative
+```java
+1| // package: com.ecommerce.shared
+2| // 독립적인 검증을 병렬로 수행, 모든 에러 수집
+3| Validation<User, List<Error>> user = Validation.combine(
+4|   validateName(name),      // 독립적
+5|   validateEmail(email),    // 독립적
+6|   validateAge(age),        // 독립적
+7|   User::new                // 모두 성공시 결합
+8| );
+```
+
+### 39. Lens Pattern
+
+**[코드 B.39]** Lens Pattern
+```java
+1| // package: com.ecommerce.shared
+2| record Lens<S, A>(Function<S, A> get, BiFunction<S, A, S> set) {
+3|   public S modify(S s, Function<A, A> fn) { return set.apply(s, fn.apply(get.apply(s))); }
+4|   public <B> Lens<S, B> andThen(Lens<A, B> other) {
+5|     return new Lens<>(s -> other.get.apply(get.apply(s)),
+6|       (s, b) -> set.apply(s, other.set.apply(get.apply(s), b)));
+7|   }
+8| }
+9| // 중첩 필드 업데이트: order.address.city
+10| Lens<Order, String> cityLens = orderAddressLens.andThen(addressCityLens);
+```
+
+### 40. Anti-Corruption Layer
+
+**[코드 B.40]** Anti-Corruption Layer
+```java
+1| // package: com.ecommerce.infra
+2| // 외부 API 응답을 도메인 모델로 변환하는 ACL
+3| public class PaymentGatewayAcl {
+4|   public Result<Payment, PaymentError> process(Order order) {
+5|     ExternalPaymentResponse ext = externalApi.charge(toExternal(order));
+6|     return toDomain(ext);  // 외부 모델 -> 도메인 모델 변환
+7|   }
+8|   private Payment toDomain(ExternalPaymentResponse r) {
+9|     return new Payment(new PaymentId(r.id()), Money.of(r.amount(), r.currency()));
+10|   }
+11| }
+```
+
+### 41. Typestate Pattern
+
+**[코드 B.41]** Typestate Pattern
+```java
+1| // package: com.ecommerce.order
+2| // 각 상태가 별도 타입
+3| record DraftOrder(OrderId id, List<OrderItem> items) {
+4|   SubmittedOrder submit() { return new SubmittedOrder(id, items, LocalDateTime.now()); }
+5| }
+6| record SubmittedOrder(OrderId id, List<OrderItem> items, LocalDateTime at) {
+7|   PaidOrder pay(PaymentId paymentId) { return new PaidOrder(id, items, paymentId); }
+8| }
+9| // 컴파일 타임에 잘못된 전이 방지: draftOrder.pay() -> 컴파일 에러!
+```
+
+### 42. Memoization
+
+**[코드 B.42]** Memoization
+```java
+1| // package: com.example.pattern
+2| public class Memoizer<T, R> {
+3|   private final Map<T, R> cache = new ConcurrentHashMap<>();
+4|   private final Function<T, R> fn;
+5|   public Memoizer(Function<T, R> fn) { this.fn = fn; }
+6|   public R apply(T t) { return cache.computeIfAbsent(t, fn); }
+7| }
+8| // 사용: 순수 함수만 메모이제이션 가능
+9| var memoizedFib = new Memoizer<>(this::fibonacci);
+```
+
+### 43. Lazy Evaluation
+
+**[코드 B.43]** Lazy Evaluation
+```java
+1| // package: com.example.pattern
+2| record Lazy<T>(Supplier<T> supplier) {
+3|   private T value;
+4|   private boolean evaluated = false;
+5|   public T get() {
+6|     if (!evaluated) { value = supplier.get(); evaluated = true; }
+7|     return value;
+8|   }
+9| }
+10| // 비용이 큰 연산을 필요할 때까지 지연
+11| Lazy<Report> report = new Lazy<>(() -> generateExpensiveReport());
+```
+
+### 44. Currying
+
+**[코드 B.44]** Currying
+```java
+1| // package: com.example.pattern
+2| // 다인자 함수를 단인자 함수 체인으로 변환
+3| BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;
+4| // Curried version
+5| Function<Integer, Function<Integer, Integer>> curriedAdd = a -> b -> a + b;
+6|
+7| Function<Integer, Integer> add5 = curriedAdd.apply(5);  // 부분 적용
+8| int result = add5.apply(3);  // 8
+```
+
+### 45. Fold / Reduce
+
+**[코드 B.45]** Fold / Reduce
+```java
+1| // package: com.ecommerce.shared
+2| // 컬렉션을 단일 값으로 축약
+3| Money total = items.stream()
+4|   .map(OrderItem::lineTotal)
+5|   .reduce(Money.zero(Currency.KRW), Money::add);
+6|
+7| // Event Sourcing에서 상태 재구성
+8| OrderState state = events.stream()
+9|   .reduce(OrderState.initial(), OrderState::apply, (s1, s2) -> s2);
+```
+
+### 46. Parse Don't Validate
+
+**[코드 B.46]** Parse Don't Validate
+```java
+1| // package: com.ecommerce.shared
+2| // [X] 검증만 하고 결과를 버림
+3| boolean isValid(String email) { return email.contains("@"); }
+4|
+5| // [O] 검증 결과를 새 타입으로 캡처
+6| public static Result<Email, EmailError> parse(String input) {
+7|   if (!input.contains("@")) return Result.failure(new InvalidEmail(input));
+8|   return Result.success(new Email(input));  // 검증된 타입 반환
+9| }
+```
+
+### 47. Make Illegal States Unrepresentable
+
+**[코드 B.47]** Make Illegal States Unrepresentable
+```java
+1| // package: com.ecommerce.order
+2| // [X] 불가능한 상태 표현 가능
+3| record Order(boolean isPaid, boolean isShipped, PaymentId paymentId) {}
+4| // isPaid=false, isShipped=true 가능! (불가능한 상태)
+5|
+6| // [O] ADT로 불가능한 상태 자체를 타입으로 표현 불가
+7| sealed interface Order permits Unpaid, Paid, Shipped {}
+8| record Unpaid(OrderId id) implements Order {}
+9| record Paid(OrderId id, PaymentId paymentId) implements Order {}
+10| record Shipped(OrderId id, PaymentId paymentId, TrackingNo tracking) implements Order {}
+```
+
+### 48. Onion Architecture
+
+**[코드 B.48]** Onion Architecture
+```java
+1| // package: com.ecommerce
+2| // 바깥에서 안으로: Infra -> Application -> Domain
+3| // Domain (core): 순수한 비즈니스 로직, 외부 의존성 없음
+4| // com.ecommerce.order.domain.Order, OrderDomainService
+5|
+6| // Application: 유스케이스 조율, 트랜잭션 경계
+7| // com.ecommerce.order.application.PlaceOrderUseCase
+8|
+9| // Infrastructure: DB, 외부 API, Framework
+10| // com.ecommerce.order.infra.JpaOrderRepository
+```
+
+### 49. Ubiquitous Language
+
+**[코드 B.49]** Ubiquitous Language
+```java
+1| // package: com.ecommerce.order
+2| // 도메인 전문가와 개발자가 같은 용어 사용
+3| // [X] 개발자 용어: processOrder(), setStatus(), item_qty
+4| // [O] 도메인 용어: placeOrder(), shipOrder(), orderQuantity
+5|
+6| public record Order(OrderId id, List<OrderLine> lines, OrderStatus status) {
+7|   public Order place() { /* "주문하다" */ }
+8|   public Order ship(TrackingNumber tracking) { /* "배송하다" */ }
+9|   public Order cancel(CancellationReason reason) { /* "취소하다" */ }
+10| }
+```
+
 ---
 
 ## 패턴 조합 가이드
@@ -431,3 +703,11 @@
 | 도메인 모델링 | Bounded Context + ADT + Value Object |
 | 이력 추적 필수 도메인 | Event Store + Aggregate Reconstitution + Decider |
 | 복잡한 조회 요구 | Event Sourcing + Projection (CQRS) |
+| FP 함수 설계 | First-Class Function + Higher-Order Function + Function Composition |
+| 컨테이너 체이닝 | Functor + Monad + Applicative |
+| 불변 객체 업데이트 | Lens Pattern + Wither Pattern |
+| 외부 시스템 통합 | Anti-Corruption Layer + Entity-Record Mapper |
+| 상태별 타입 안전성 | Typestate Pattern + Make Illegal States Unrepresentable |
+| 성능 최적화 | Memoization + Lazy Evaluation |
+| 입력 검증 | Parse Don't Validate + Value Object + Compact Constructor |
+| 도메인 설계 기반 | Ubiquitous Language + Bounded Context + Onion Architecture |
