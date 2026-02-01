@@ -114,6 +114,7 @@ RUNTIME VALIDATION (Guard)        COMPILE-TIME SAFETY (Lock)
 **Boolean 필드 vs Sum Type 변환 가이드**:
 
 **[표 04.1]** Make Illegal States Unrepresentable (불가능한 상태를 표현 불가능하게)
+
 | Before (Boolean) | After (Sum Type) | 효과 |
 |-------------------|-------------------|------|
 | `isVerified` + `verifiedAt` | `sealed{Unverified, Verified(at)}` | null 조합 제거 |

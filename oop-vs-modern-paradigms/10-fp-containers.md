@@ -242,6 +242,7 @@ Functor의 map은 "컨텍스트(Optional, Stream, Future)를 보존하면서 내
 Java의 주요 Monad와 그 flatMap:
 
 **[표 10.1]** Monad 패턴 (flatMap으로 컨텍스트 연결)
+
 | Monad | of | flatMap | 컨텍스트 |
 |-------|------|---------|----------|
 | `Optional<T>` | `Optional.of()` | `.flatMap()` | 값 존재/부재 |
@@ -252,6 +253,7 @@ Java의 주요 Monad와 그 flatMap:
 함수의 반환 타입이 컨테이너인 것은 설계 선택이 아니라, 해당 연산의 **본질적 의미(semantics)** 를 표현하는 것이다:
 
 **[표 10.A]** 컨테이너 반환 타입의 의미론
+
 | 반환 타입 | 의미 | 예시 |
 |-----------|------|------|
 | `Optional<T>` | 없을 수도 있다 | `findById(id)` - 해당 ID가 없을 수 있음 |
@@ -778,6 +780,7 @@ Optional을 "있거나 없거나"라는 컨텍스트를 가진 Monad로 사용�
 에러 처리 전략 선택:
 
 **[표 10.2]** Result/Either as Monad (에러 처리 모나드)
+
 | 상황 | 방식 |
 |------|------|
 | 비즈니스/도메인 에러 | Result (값으로 표현) |

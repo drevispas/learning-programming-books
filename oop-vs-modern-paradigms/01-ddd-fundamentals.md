@@ -226,6 +226,7 @@
 ### 이해를 위한 부가 상세
 
 **[표 01.1]** Anemic vs Rich Domain Model
+
 | 관점 | Anemic (빈약) | Rich (풍부) |
 |------|--------------|-------------|
 | Entity 역할 | 데이터 저장소 | 행위 + 불변식 보호 |
@@ -366,6 +367,7 @@
 ### 이해를 위한 부가 상세
 
 **[표 01.2]** Subdomain 유형별 전략
+
 | Subdomain 유형 | 투자 수준 | 개발 전략 | 예시 |
 |---------------|----------|----------|------|
 | Core | 최고 | 직접 개발, 최고 인력 배치 | 추천 알고리즘, 가격 최적화 |
@@ -497,6 +499,7 @@
 ### Context Mapping 패턴들
 
 **[표 01.3]** Context Mapping 패턴
+
 | 패턴 | 설명 | 사용 시점 |
 |------|------|----------|
 | **Shared Kernel** | 두 BC가 공유하는 작은 모델 | 긴밀하게 협력하는 두 팀 |
@@ -710,6 +713,7 @@
 ```
 
 **[표 01.4]** Repository vs DAO
+
 | 관점 | Repository | DAO |
 |------|-----------|-----|
 | 추상화 수준 | 도메인 개념 (Order) | 데이터 개념 (row) |
@@ -803,6 +807,7 @@
 - **설명**: Eric Evans의 원래 DDD(2003)는 가변 객체 기반 OOP를 가정했습니다. 현대의 FP/DOP 패러다임에서는 같은 개념을 불변 Record와 순수 함수로 구현합니다.
 
 **[표 01.5]** Traditional DDD vs DMMF vs DOP
+
 | 개념 | Traditional DDD | DMMF (FP) | DOP |
 |------|-----------------|-----------|-----|
 | **Entity** | Mutable class, setter | Immutable record + wither | Record + 외부 Calculations |
@@ -877,6 +882,7 @@
 ### FP/DOP 연결점 요약
 
 **[표 01.6]** DDD 개념과 FP/DOP 구현 연결
+
 | DDD 개념 | FP/DOP 구현 | 상세 챕터 |
 |---------|------------|----------|
 | Value Object | `record` + Compact Constructor | Ch.02 |
@@ -901,6 +907,7 @@
 - **설명**: DDD 안티패턴은 DDD를 적용한다고 하면서 실제로는 핵심 원칙을 위반하는 경우입니다. 이를 인식하고 피해야 합니다.
 
 **[표 01.7]** DDD 안티패턴
+
 | 안티패턴 | 증상 | 원인 | 해결책 |
 |---------|------|------|--------|
 | **Anemic Domain Model** | Entity에 getter/setter만, 도메인 규칙이 Service에 산재 | "객체는 데이터" 사고 | 타입 시스템으로 불변식/상태 전이 캡처 (아래 상세) |
@@ -938,6 +945,7 @@
 얼핏 보면 DOP도 "데이터(Record)와 로직(Calculations) 분리"이니 Anemic처럼 보입니다. 차이점은 **도메인 지식이 어디에 캡처되는가**입니다.
 
 **[표 01.8]** Anemic Model vs DOP 비교
+
 | 관점 | Anemic Model (안티패턴) | DOP (권장) |
 |------|------------------------|-----------|
 | **타입 정의** | `String status` (원시 타입) | `sealed interface OrderStatus` (Sum Type) |
@@ -987,6 +995,7 @@
 ### JPA @Entity vs DDD Entity: 같은 이름, 다른 개념
 
 **[표 01.9]** JPA @Entity vs DDD Entity
+
 | 관점 | JPA @Entity | DDD Entity |
 |------|-------------|------------|
 | **목적** | 테이블 매핑 (영속화) | 도메인 모델링 (식별자 기반 객체) |
@@ -1060,6 +1069,7 @@
 ## 정리: 이 챕터에서 다룬 DDD 개념과 이후 챕터 연결
 
 **[표 01.10]** DDD 개념 → 후속 챕터 매핑
+
 | DDD 개념 | 핵심 내용 | 상세 챕터 |
 |---------|----------|----------|
 | Value Object | 값 기반 불변 타입 | Ch.02 (Value Objects) |

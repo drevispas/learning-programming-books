@@ -138,6 +138,7 @@
 Java의 주요 Functional Interface 정리:
 
 **[표 09.1]** 일급 함수 (First-Class Functions)
+
 | Interface | 시그니처 | 용도 |
 |-----------|----------|------|
 | `Function<T,R>` | `T -> R` | 변환 |
