@@ -61,7 +61,7 @@
 | 49 | Ubiquitous Language | 도메인 전문가와 개발자가 사용하는 공통 용어 체계 | 02 |
 | 50 | Smart Constructor | 팩토리 메서드로 불변조건 강제 + Result 반환 (예외 대신) | 03, 06 |
 | 51 | Opaque Type (Newtype) | 같은 기반 타입이지만 호환 불가능한 래퍼로 타입 혼동 방지 | 03 |
-| 52 | Gatherer Pattern | Java 22+ Stream Gatherers로 커스텀 중간 연산 구현 | 09 |
+| 52 | Gatherer Pattern | Java 24+ Stream Gatherers로 커스텀 중간 연산 구현 | 09 |
 | 53 | Structural Sharing | 불변 컬렉션 업데이트 시 변경 부분만 새로 생성 | 11 |
 | 54 | Either Type | Left/Right로 두 가지 타입 중 하나를 표현하는 범용 합타입 | 06 |
 | 55 | Visitor via Pattern Matching | 전통적 Visitor 패턴을 switch 패턴 매칭으로 대체 | 04 |
@@ -76,10 +76,24 @@
 ```java
 // package: com.ecommerce.shared
 public record Money(BigDecimal amount, Currency currency) {
-  public Money { if (amount.signum() < 0) throw new IllegalArgumentException("음수 금액"); }
+  public Money {
+    Objects.requireNonNull(amount, "금액 필수");
+    Objects.requireNonNull(currency, "통화 필수");
+    if (amount.signum() < 0) throw new IllegalArgumentException("음수 금액");
+  }
   public Money add(Money o) {
-    if (!currency.equals(o.currency)) throw new IllegalArgumentException("통화 불일치");
+    requireSameCurrency(o);
     return new Money(amount.add(o.amount), currency);
+  }
+  public Money multiply(int factor) {
+    return new Money(amount.multiply(BigDecimal.valueOf(factor)), currency);
+  }
+  public boolean isGreaterThan(Money o) {
+    requireSameCurrency(o);
+    return amount.compareTo(o.amount) > 0;
+  }
+  private void requireSameCurrency(Money o) {
+    if (!currency.equals(o.currency)) throw new IllegalArgumentException("통화 불일치");
   }
 }
 ```
@@ -167,11 +181,15 @@ public Result<Order, OrderError> ship(TrackingNumber tracking) {
 
 ### 9. Phantom Type
 
-**[코드 B.9]** Email record
+**[코드 B.9]** Phantom Type Email record
 ```java
 // package: com.ecommerce.shared
-public record Email<S extends EmailState>(String value) {}
 sealed interface EmailState permits Unverified, Verified {}
+record Unverified() implements EmailState {}
+record Verified() implements EmailState {}
+
+public record Email<S extends EmailState>(String value) {}
+
 Email<Verified> verify(Email<Unverified> email, String code) { /*...*/ }
 ```
 
@@ -270,7 +288,7 @@ public sealed interface Validation<S, E> {
 
   static <A, B, C, R, E> Validation<R, E> combine3(
       Validation<A, E> v1, Validation<B, E> v2, Validation<C, E> v3,
-      TriFunction<A, B, C, R> fn) {
+      TriFunction<A, B, C, R> fn) {  // TriFunction: @FunctionalInterface (A, B, C) -> R
     List<E> errors = new ArrayList<>();
     if (v1 instanceof Invalid<A, E> i) errors.addAll(i.errors());
     if (v2 instanceof Invalid<B, E> i) errors.addAll(i.errors());
@@ -445,6 +463,7 @@ public void on(OrderEvent event) {
   switch (event) {
     case OrderPlaced e -> summaryRepo.save(new OrderSummary(e.id(), "PLACED", e.at()));
     case OrderPaid e -> summaryRepo.updateStatus(e.id(), "PAID", e.at());
+    case OrderShipped e -> summaryRepo.updateStatus(e.id(), "SHIPPED", e.at());
   }
 }
 ```
@@ -457,7 +476,8 @@ public void on(OrderEvent event) {
 public record Order(OrderId id, List<OrderItem> items, OrderStatus status) {
   public Order addItem(ProductId p, Quantity q, Money price) {
     var newItem = new OrderItem(ItemId.generate(), p, q, price);
-    return new Order(id, List.copyOf(append(items, newItem)), status);
+    var newItems = Stream.concat(items.stream(), Stream.of(newItem)).toList();
+    return new Order(id, newItems, status);
   }
 }
 ```
@@ -794,7 +814,7 @@ ProductId productId = new ProductId(UUID.randomUUID());
 **[코드 B.52]** Gatherer Pattern
 ```java
 // package: com.example.pattern
-// Java 22+ Stream Gatherer: 커스텀 중간 연산
+// Java 24+ Stream Gatherer (정식), Java 22-23 Preview
 import java.util.stream.Gatherers;
 
 // 슬라이딩 윈도우로 이동 평균 계산
